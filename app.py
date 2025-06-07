@@ -1,17 +1,15 @@
 import streamlit as st
-import random
+import matplotlib.pyplot as plt
 
-# --- Player Data ---
-goalkeepers = [
-    "Gianluigi Buffon", "Iker Casillas", "Manuel Neuer"
-]
+# Player pools
+goalkeepers = ["Gianluigi Buffon", "Iker Casillas", "Manuel Neuer"]
 
-defenders = list(dict.fromkeys([
+defenders = [
     "Alessandro Nesta", "Paolo Maldini", "Jaap Stam", "Lilian Thuram", "Javier Zanetti",
     "Fabio Cannavaro", "Thiago Silva", "Philipp Lahm", "Rio Ferdinand", "Cafu",
     "Roberto Carlos", "Carles Puyol", "Dani Alves", "Marcel Desailly", "Piqué",
-    "Sergio Ramos", "Jaap Stam"
-]))
+    "Sergio Ramos"
+]
 
 midfielders = [
     "Zinedine Zidane", "Luis Figo", "Steven Gerrard", "Rui Costa", "Kaká", "Paul Scholes",
@@ -25,36 +23,46 @@ forwards = [
     "Luis Suárez", "Roberto Baggio", "Romário"
 ]
 
-# --- Helper functions ---
-def assign_ratings(players):
-    return [{"name": p, "rating": random.randint(85, 99)} for p in players]
+st.title("⚽ Build Your Best XI with Visual Pitch")
 
-def select_best(players, count):
-    return sorted(players, key=lambda x: x["rating"], reverse=True)[:count]
+formation = st.selectbox("Choose formation", ["4-3-3", "4-4-2", "3-5-2", "3-4-3", "4-5-1"])
+def_count, mid_count, fwd_count = map(int, formation.split("-"))
 
-# --- Streamlit UI ---
-st.title("🏆 Best 11 Football Player Selector")
+goalkeeper = st.selectbox("Goalkeeper", goalkeepers)
+defense = st.multiselect(f"Select {def_count} Defenders", defenders, max_selections=def_count)
+midfield = st.multiselect(f"Select {mid_count} Midfielders", midfielders, max_selections=mid_count)
+forward = st.multiselect(f"Select {fwd_count} Forwards", forwards, max_selections=fwd_count)
 
-st.markdown("Choose your **formation** (total of 10 outfield players):")
-d = st.number_input("Defenders", min_value=1, max_value=5, value=4, step=1)
-m = st.number_input("Midfielders", min_value=1, max_value=5, value=3, step=1)
-f = st.number_input("Forwards", min_value=1, max_value=4, value=3, step=1)
+def draw_pitch(gk, def_players, mid_players, fwd_players):
+    fig, ax = plt.subplots(figsize=(10, 7))
+    ax.set_facecolor("green")
+    plt.xlim(0, 100)
+    plt.ylim(0, 100)
+    ax.axis("off")
 
-if d + m + f != 10:
-    st.warning("Total outfield players must equal 10.")
+    def place_players(players, y):
+        spacing = 100 / (len(players) + 1)
+        for i, name in enumerate(players):
+            x = spacing * (i + 1)
+            ax.text(x, y, name, ha='center', va='center',
+                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5'))
+
+    # Draw players
+    place_players([gk], 10)
+    place_players(def_players, 30)
+    place_players(mid_players, 55)
+    place_players(fwd_players, 80)
+
+    st.pyplot(fig)
+
+if (
+    goalkeeper
+    and len(defense) == def_count
+    and len(midfield) == mid_count
+    and len(forward) == fwd_count
+):
+    st.subheader("🟩 Your Team Formation")
+    draw_pitch(goalkeeper, defense, midfield, forward)
 else:
-    if st.button("Select Best 11"):
-        gk = assign_ratings(goalkeepers)
-        df = assign_ratings(defenders)
-        mf = assign_ratings(midfielders)
-        fw = assign_ratings(forwards)
+    st.info("Please select the full lineup to display the pitch.")
 
-        team = []
-        team += select_best(gk, 1)
-        team += select_best(df, d)
-        team += select_best(mf, m)
-        team += select_best(fw, f)
-
-        st.subheader("🌟 Your Starting 11")
-        for p in team:
-            st.write(f"**{p['name']}** — Rating: {p['rating']}")
