@@ -1,5 +1,6 @@
 import streamlit as st
 import matplotlib.pyplot as plt
+from io import BytesIO
 
 # Player pools
 goalkeepers = ["Gianluigi Buffon", "Iker Casillas", "Manuel Neuer"]
@@ -53,7 +54,7 @@ def draw_pitch(gk, def_players, mid_players, fwd_players):
     place_players(mid_players, 55)
     place_players(fwd_players, 80)
 
-    st.pyplot(fig)
+    return fig
 
 if (
     goalkeeper
@@ -62,7 +63,21 @@ if (
     and len(forward) == fwd_count
 ):
     st.subheader("🟩 Your Team Formation")
-    draw_pitch(goalkeeper, defense, midfield, forward)
+
+    fig = draw_pitch(goalkeeper, defense, midfield, forward)
+    st.pyplot(fig)
+
+    # Save to BytesIO buffer
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+
+    st.download_button(
+        label="📥 Download Pitch Image",
+        data=buf,
+        file_name="best_11_formation.png",
+        mime="image/png"
+    )
+
 else:
     st.info("Please select the full lineup to display the pitch.")
-
